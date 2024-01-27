@@ -10,7 +10,7 @@ const {
 const os = require("os");
 
 const NUM_WORKERS = os.cpus().length;
-const CHUNK_SIZE = 1000;
+const CHUNK_SIZE = 1000; // Adjust this based on your data size and system capabilities
 
 async function loadData(csvFilePath) {
   const csvJson = await csvtoJson().fromFile(csvFilePath);
@@ -77,33 +77,49 @@ if (isMainThread) {
     for (let channelName of chatChannels) {
       const messages = csvData[channelName];
       const chunks = [];
-
       for (let i = 0; i < messages.length; i += CHUNK_SIZE) {
-        chunks.push(messages.slice(i, i + CHUNK_SIZE));
+        chunks.push({ index: i, data: messages.slice(i, i + CHUNK_SIZE) });
       }
 
       channels[channelName] = [];
 
-      const workerPromises = [];
-      for (let i = 0; i < chunks.length; i++) {
-        workerPromises.push(runWorker(chunks[i], i % NUM_WORKERS));
-      }
+      const workerPromises = chunks.map((chunk) => {
+        return runWorker(chunk.data, chunk.index)
+          .then((result) => ({ channelName, index: chunk.index, data: result }))
+          .catch((err) => ({ channelName, index: chunk.index, error: err }));
+      });
 
       const results = await Promise.all(workerPromises);
 
-      for (let result of results) {
-        console.log("Result from worker:", result); // Debugging line
-        if (Array.isArray(result)) {
-          channels[channelName].push(...result);
-        } else {
-          console.error("Unexpected result structure:", result);
-          // Handle unexpected result structure
-        }
-      }
+      results
+        .sort((a, b) => a.index - b.index)
+        .forEach((result) => {
+          if (result.error) {
+            console.error(
+              `Error processing chunk ${result.index} for channel ${result.channelName}:`,
+              result.error
+            );
+          } else {
+            if (Array.isArray(result.data)) {
+              channels[result.channelName].push(...result.data);
+            } else {
+              //console.error("Unexpected result structure:", result);
+            }
+          }
+        });
     }
+
+    return channels;
   }
 
-  runAnalysis();
+  runAnalysis()
+    .then((channels) => {
+      //console.log("Processed channels data:", channels);
+      console.log(channels["aristotian"].length);
+    })
+    .catch((error) => {
+      console.error("An error occurred in the analysis:", error);
+    });
 } else {
   processChunk(workerData.data)
     .then((processedChunk) => {
