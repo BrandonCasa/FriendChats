@@ -1,11 +1,13 @@
-import fs from "fs";
-import * as csvParse from "csv-parse";
+const fs = require("fs/promises");
+const csvtoJson = require("csvtojson");
 
 class FriendChats {
   constructor() {}
 
-  async loadData(csvFile) {}
+  async loadData(csvFilePath) {
+    const csvJson = await csvtoJson().fromFile(csvFilePath);
+    return csvJson;
+  }
 }
 
-friendChats = new FriendChats();
-export default friendChats;
+module.exports = FriendChats;
