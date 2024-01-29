@@ -1,8 +1,9 @@
-import re
+from nltk import ngrams
 
-testString = " yo? https://youtu.be/pL9o_BwSN-o?t=17 lol https://www.programiz.com/python-programming/methods/string/index"
+sentence = 'this is a foo bar sentences and I want to ngramize it'
 
-text = re.sub(
-    r'''(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))''', " ", testString)
+n = 6
+sixgrams = ngrams(sentence.split(), n)
 
-print(text)
+for grams in sixgrams:
+    print(grams)
